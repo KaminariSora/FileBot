@@ -2,36 +2,50 @@ import os
 # import datetime
 from pathlib import Path
 
-def search_files(context):
-    search_dir = Path(r"D:\\Working\\C_work\\Coding\\FileBot\\TestData")
+def search_files(context, path: str):
+    search_dir = Path(path)
     file_type = context.get("type")
-    # modified_within_days = context.get("modified_within_days") or 7  # ป้องกัน None
+    filename = context.get("filename")
 
     results = []
-    # now = datetime.datetime.now()
 
     for path in search_dir.rglob("*"):
         if not path.is_file():
             continue
 
+        # Filter by file type
         if file_type and not path.name.endswith(file_type):
             continue
 
-        # modified_time = datetime.datetime.fromtimestamp(path.stat().st_mtime)
-        # if (now - modified_time).days > modified_within_days:
-        #     continue
+        # Filter by filename (partial match)
+        if filename and filename.lower() not in path.name.lower():
+            continue
 
         results.append({
             "name": path.name,
             "path": str(path),
-            # "modified": modified_time.strftime("%Y-%m-%d %H:%M"),
         })
 
     return results
 
 
 def open_file(filepath: str):
+    """เปิดไฟล์ด้วย application เริ่มต้น"""
     try:
-        os.startfile(filepath)  # Windows only
+        file_path = Path(filepath)
+        if not file_path.exists():
+            raise FileNotFoundError(f"ไม่พบไฟล์: {filepath}")
+        
+        # Windows
+        if os.name == 'nt':
+            os.startfile(filepath)
+        # macOS
+        elif os.name == 'posix' and os.uname().sysname == 'Darwin':
+            os.system(f'open "{filepath}"')
+        # Linux
+        else:
+            os.system(f'xdg-open "{filepath}"')
+            
+        return {"success": True, "message": f"เปิดไฟล์ {file_path.name} เรียบร้อยแล้ว"}
     except Exception as e:
-        print(f"Error opening file: {e}")
+        return {"success": False, "message": f"เกิดข้อผิดพลาด: {str(e)}"}
