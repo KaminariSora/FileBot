@@ -1,9 +1,17 @@
 import './App.css';
-import Chatbot from './Components/Chatbot';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import FileBot from './Components/FileBot';
+import ChatBot from './Components/ChatBot';
 
 function App() {
   return (
-    <Chatbot/>
+    <Router>
+      <Routes>
+        <Route path="/" element={<ChatBot />} />
+        <Route path="/ChatBot" element={<ChatBot />} />
+        <Route path="/FileBot" element={<FileBot />} />
+      </Routes>
+    </Router>
   );
 }
 

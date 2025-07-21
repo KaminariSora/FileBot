@@ -1,246 +1,59 @@
-import { useState } from 'react';
-import './Chatbot.css';
+import { useState } from 'react'
+import './ChatBot.css'
+import ChatForm from './ChatForm'
+import ChatMessage from './ChatMessage'
 
-const Chatbot = () => {
-    const [question, setQuestion] = useState('');
-    const [answer, setAnswer] = useState('');
-    const [pathValue, setPathValue] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [selectedPath, setSelectedPath] = useState('');
-    const [isPathLoading, setIsPathLoading] = useState(false)
-    const [isLoading, setIsLoading] = useState(false);
-    const [status, setStatus] = useState(false)
+const ChatBot = () => {
+    const [chatHistory, setChatHistory] = useState([]);
 
-    const handleSearchPathValue = async () => {
-        setIsPathLoading(true);
+    const getModelResponse = async (history) => {
+        const updateHistory = (text) => {
+            setChatHistory(prev => [
+                ...prev.filter(msg => msg.text !== "Thinking..."),
+                { role: "assistant", text }
+            ]);
+        }
+
+        history = history.map(({ role, text }) => ({ role, parts: [{ text }] }));
+        const requestOptions = {
+            method: 'POST',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: history })
+        }
         try {
-            const res = await fetch('http://localhost:8000/search-path', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: pathValue }),
-            });
-            const data = await res.json();
-            console.log("search-path response:", data);
+            const response = await fetch("http://localhost:8000/mcp-run", requestOptions)
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.error.message || "Something went wrong!")
 
-            if (data.exists) {
-                setStatus(true);
-                setAnswer(`พบ path: ${data.path}`);
-            } else {
-                setStatus(false);
-                setAnswer(`ไม่พบ path: ${data.path}`);
-            }
-        } catch (err) {
-            console.error('Error searching path:', err);
-            setStatus(false);
-            setAnswer('เกิดข้อผิดพลาดในการตรวจสอบ path');
-        } finally {
-            setIsPathLoading(false);
+            const apiResponseText = data.candidate[0].contents.part[0].text.replace(/\*\*(.*?)\*\*/g, "$1").trim()
+            updateHistory(apiResponseText)
+        } catch (error) {
+            console.log(error)
         }
-    };
-
-
-    const handleSearchFiles = async () => {
-        setIsLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/intent-text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: searchQuery }),
-            });
-
-            const data = await res.json();
-            setSearchResults(data);
-        } catch (err) {
-            console.error('Error searching files:', err);
-            setAnswer('เกิดข้อผิดพลาดในการค้นหาไฟล์');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleOpenFile = async (filepath) => {
-        setIsLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/open-file', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ filepath }),
-            });
-
-            const data = await res.json();
-            setAnswer(data.message || 'เปิดไฟล์เรียบร้อยแล้ว');
-        } catch (err) {
-            console.error('Error opening file:', err);
-            setAnswer('เกิดข้อผิดพลาดในการเปิดไฟล์');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleAsk = async () => {
-        if (!selectedPath) {
-            setAnswer('กรุณาเลือกไฟล์ก่อน');
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/ask-file', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ path: selectedPath, question }),
-            });
-
-            const data = await res.json();
-            setAnswer(data.answer);
-        } catch (err) {
-            console.error('Error calling chatbot:', err);
-            setAnswer('เกิดข้อผิดพลาดในการถามคำถาม');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleSelectFile = (file) => {
-        setSelectedPath(file.path);
-        setAnswer(`เลือกไฟล์: ${file.name}`);
-    };
-
-    const handlePathClear = () => {
-        setPathValue('');
-        setSearchResults([]);
-        setStatus(false);
-    };
-
-    const handleSearchClear = () => {
-        setSearchQuery('');
-        setSearchResults([]);
-        setSelectedPath('');
-        setQuestion('');
-        setAnswer('');
-    };
-
+    }
     return (
-        <div className="container">
-            <div className="path-box">
-                <label>ใส่ Path ที่ต้องการให้ค้นหา</label>
-                <input
-                    type="text"
-                    value={pathValue}
-                    onChange={(e) => setPathValue(e.target.value)}
-                    placeholder="ใส่ Path บน PC เช่น D:\Path\Path"
-                />
-                <div className="button-group">
-                    <button
-                        onClick={handleSearchPathValue}
-                        disabled={isPathLoading || !pathValue.trim()}
-                        className={isPathLoading ? 'PathLoading' : ''}
-                    >
-                        {isPathLoading ? 'กำลังค้นหาPath...' : 'ค้นหา Path'}
-                    </button>
-                    <button onClick={handlePathClear} className="clear-btn">
-                        ล้างข้อมูล Path
-                    </button>
-                </div>
-                {status === true && <div>ยืนยันว่า Path มีอยู่จริง</div>}
-                {status === false && <div>กรุณาใส่ Path ที่ต้องการให้ค้นหา</div>}
-            </div>
-            {/* Search Section */}
-            <div className="search-box">
-                <label>ค้นหาไฟล์</label>
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="พิมพ์ชื่อไฟล์ หรือ นามสกุล เช่น report.pdf, .xlsx"
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearchFiles()}
-                />
-                <div className="button-group">
-                    <button
-                        onClick={handleSearchFiles}
-                        disabled={isLoading || !searchQuery.trim()}
-                        className={isLoading ? 'loading' : ''}
-                    >
-                        {isLoading ? 'กำลังค้นหา...' : 'ค้นหา'}
-                    </button>
-                    <button onClick={handleSearchClear} className="clear-btn">
-                        ล้างข้อมูล
-                    </button>
-                </div>
-            </div>
+        <div className='chatbot-body'>
 
-            {/* File Results Section */}
-            <div className="file-results">
-                <h4>รายการไฟล์ที่พบ ({searchResults.length} ไฟล์)</h4>
-                <ul>
-                    {searchResults.map((file, index) => (
-                        <li key={index} className={selectedPath === file.path ? 'selected' : ''}>
-                            <div className="file-info">
-                                <strong>{file.name}</strong>
-                                <small>{file.path}</small>
-                            </div>
-                            <div className="file-actions">
-                                <button
-                                    onClick={() => handleSelectFile(file)}
-                                    className="select-btn"
-                                >
-                                    เลือก
-                                </button>
-                                <button
-                                    onClick={() => handleOpenFile(file.path)}
-                                    className="open-btn"
-                                    disabled={isLoading}
-                                >
-                                    เปิดไฟล์
-                                </button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-                {searchResults.length === 0 && searchQuery && (
-                    <p className="no-results">ไม่พบไฟล์ที่ตรงกับการค้นหา</p>
-                )}
-                {selectedPath && (
-                    <div className="selected-file">
-                        <p>
-                            ไฟล์ที่เลือก: <code>{selectedPath}</code>
-                        </p>
+            <div className="container">
+                <div className="chat-header">
+                    <div className="header-info">
+                        <h2 className="logo-text">ไม่เข้าใจว่า MCP ใช้ยังไง บลั่กๆๆๆ</h2>
                     </div>
-                )}
-            </div>
-
-            {/* Question Section */}
-            <div className="question-box">
-                <label>ถามคำถามจากไฟล์</label>
-                <input
-                    type="text"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="พิมพ์คำถามที่ต้องการถามจากไฟล์"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
-                />
-                <button
-                    onClick={handleAsk}
-                    disabled={isLoading || !selectedPath || !question.trim()}
-                    className={isLoading ? 'loading' : ''}
-                >
-                    {isLoading ? 'กำลังประมวลผล...' : 'ถาม'}
-                </button>
-            </div>
-
-            {/* Answer Section */}
-            <div className="answer-box">
-                <h6>{answer || 'คำตอบจะปรากฏที่นี่...'}</h6>
+                </div>
+                <div className='chat-body'>
+                    <div className='message bot-message'>
+                        <p className='message-text'>How to use MCP in this project?</p>
+                    </div>
+                    {chatHistory.map((chat, index) => (
+                        <ChatMessage key={index} chat={chat} />
+                    ))}
+                </div>
+                <div className='chat-footer'>
+                    <ChatForm chatHistory={chatHistory} setChatHistory={setChatHistory} getModelResponse={getModelResponse} />
+                </div>
             </div>
         </div>
-    );
+    )
 }
 
-export default Chatbot;
+export default ChatBot
