@@ -5,6 +5,8 @@ from mcp_layer import search_files, open_file
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+from langchain_core.messages import HumanMessage
+from langchain.chat_models import init_chat_model
 import os
 
 from file_chatbot import ask_question
@@ -13,11 +15,14 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ใน production ควรระบุ domain ให้ปลอดภัย
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class ChatInput(BaseModel):
+    contents: list
 
 class ChatRequest(BaseModel):
     message: str
@@ -39,6 +44,44 @@ class FileQuestionRequest(BaseModel):
 @app.get("/")
 async def root():
     return {"message": "Root Page"}
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./service/service_account.json"
+
+llm = init_chat_model(
+    "gemini-2.0-flash",
+    model_provider="google_genai",
+    temperature=0.8
+)
+
+@app.post("/mcp-run")
+def run_mcp(req: ChatInput):
+    messages = []
+
+    for item in req.contents:
+        role = item.get("role")
+        parts = item.get("parts", [])
+        for part in parts:
+            text = part.get("text", "")
+            if role == "user" or role == "human":
+                messages.append(HumanMessage(content=text))
+            else:
+                messages.append({"role": role, "content": text})
+
+    response = llm.invoke(messages)
+
+    return {
+        "candidate": [
+            {
+                "contents": {
+                    "part": [
+                        {
+                            "text": response.content
+                        }
+                    ]
+                }
+            }
+        ]
+    }
 
 global_search_path = ""
 
@@ -70,8 +113,9 @@ def chat_endpoint(req: ChatRequest):
         return results
 
     elif intent_data["intent"] == "open_file":
+        print("Path: ",global_search_path)
         results = search_files(intent_data, global_search_path)
-        print(f"[OPEN FILE] {results}")
+        print(f"intent [OPEN FILE] {results}")
         if results:
             open_file(results[0]["path"])
             print("-----------------------")
@@ -82,8 +126,10 @@ def chat_endpoint(req: ChatRequest):
 @app.post("/open-file")
 def open_file(req: FileOpenRequest):
     filepath = req.filepath
+    print(f"[DEBUG] Received filepath: {req.filepath}")
+    print(f"[DEBUG] Type of filepath: {type(req.filepath)}")
     try:
-        file_path = Path(filepath)
+        file_path = Path(req.filepath)
         if not file_path.exists():
             raise FileNotFoundError(f"ไม่พบไฟล์: {filepath}")
         

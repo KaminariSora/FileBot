@@ -7,25 +7,28 @@ def search_files(context, path: str):
     file_type = context.get("type")
     filename = context.get("filename")
 
+    print(f"[DEBUG] Searching with - filename: '{filename}', type: '{file_type}'")
+    
     results = []
 
-    for path in search_dir.rglob("*"):
-        if not path.is_file():
+    for file_path in search_dir.rglob("*"):
+        if not file_path.is_file():
             continue
 
         # Filter by file type
-        if file_type and not path.name.endswith(file_type):
+        if file_type and not file_path.name.lower().endswith(file_type.lower()):
             continue
 
-        # Filter by filename (partial match)
-        if filename and filename.lower() not in path.name.lower():
+        # Filter by filename (partial match) - ถ้าไม่มี filename ก็ไม่ต้องกรอง
+        if filename and filename.lower() not in file_path.name.lower():
             continue
 
         results.append({
-            "name": path.name,
-            "path": str(path),
+            "name": file_path.name,
+            "path": str(file_path),
         })
-
+    
+    print(f"[DEBUG] Found {len(results)} files")
     return results
 
 
