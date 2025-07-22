@@ -1,3 +1,11 @@
+body {
+    background: rgb(248, 215, 245);
+    background-image: url('../../public/background/ChickChat.GIF');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+}
+
 .chatbot-body {
     width: 100%;
     display: flex;
@@ -73,11 +81,44 @@
 }
 
 .chat-footer {
+    display: flex;
+    align-items: center;
     position: absolute;
     bottom: 0;
+    right: 0;
     width: 100%;
     background: transparent;
     padding: 15px 22px 15px;
+}
+
+.chat-footer .plus-button {
+    background: #333;
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.chat-footer .plus-button:hover {
+    background: yellow;
+    color: blueviolet;
+}
+
+.chat-footer .plus-button::before {
+    content: '';
+    opacity: 0;
+    top: 0;
+    left: 7%;
+}
+
+.chat-footer .plus-button:hover::before {
+    content: 'File Searching Mode';
+    position: absolute;
+    top: -10%;
+    left: 7%;
+    color: #fff;
+    opacity: 1;
+    transition: .2s ease;
 }
 
 .chat-footer .chat-form {
@@ -85,6 +126,7 @@
     align-items: center;
     background : #fff;
     border-radius: 32px;
+    width: 100%;
     outline: 1px solid black;
 }
 
@@ -111,5 +153,6 @@
 
 .chat-form button:hover {
     cursor: pointer;
-    background: yellow;
+    background: blueviolet;
+    color: yellow;
 }

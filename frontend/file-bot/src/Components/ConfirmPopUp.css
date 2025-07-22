@@ -1,0 +1,44 @@
+.confirm-popup {
+    position: absolute;
+    left: 50%;
+    top: -0%;
+    transform: translate(-50%, -100%);
+    background: #fff;
+    width: 90%;
+    height: 200%;
+    font-size: 0.95rem;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transition: .2s ease;
+}
+
+.confirm-popup.show {
+    left: 50%;
+    top: -100%;
+    transform: translate(-50%, -100%);
+    opacity: 1;
+}
+
+.choice-selection {
+    background-color: blueviolet;
+    color: #fff;
+    border-radius: 10px;
+    height: 20%;
+    width: 40%;
+    gap: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.choice-selection:hover {
+    cursor: pointer;
+    background: blueviolet;
+    color: yellow;
+    transform: scale(1.1);
+}

@@ -33,7 +33,6 @@ const ChatBot = () => {
     }
     return (
         <div className='chatbot-body'>
-
             <div className="container">
                 <div className="chat-header">
                     <div className="header-info">
@@ -42,15 +41,13 @@ const ChatBot = () => {
                 </div>
                 <div className='chat-body'>
                     <div className='message bot-message'>
-                        <p className='message-text'>How to use MCP in this project?</p>
+                        <p className='message-text'>Hello, May I help you? (สวัสดี มีอะไรให้ช่วยไหม)</p>
                     </div>
                     {chatHistory.map((chat, index) => (
                         <ChatMessage key={index} chat={chat} />
                     ))}
                 </div>
-                <div className='chat-footer'>
-                    <ChatForm chatHistory={chatHistory} setChatHistory={setChatHistory} getModelResponse={getModelResponse} />
-                </div>
+                <ChatForm chatHistory={chatHistory} setChatHistory={setChatHistory} getModelResponse={getModelResponse} />
             </div>
         </div>
     )
