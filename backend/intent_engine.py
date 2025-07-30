@@ -14,26 +14,42 @@ class IntentSchema(BaseModel):
 
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", """คุณคือผู้ช่วยที่วิเคราะห์ข้อความผู้ใช้และตอบกลับเป็น JSON 
-    
-        ประเภท intent ที่เป็นไปได้:
-        - search_file: เมื่อผู้ใช้ต้องการค้นหาไฟล์
-        - open_file: เมื่อผู้ใช้ต้องการเปิดไฟล์
+    ("system", """คุณคือผู้ช่วยที่วิเคราะห์ข้อความผู้ใช้และตอบกลับเป็น JSON
 
-        คำที่สื่อถึงการค้นหา: ค้นหา, หา, ต้องการดู, มีไฟล์อะไรบ้าง
-        คำที่สื่อถึงการเปิด: เปิด, เปิดไฟล์, แสดงไฟล์
+    ประเภท intent ที่เป็นไปได้:
+    - search_file: เมื่อผู้ใช้ต้องการค้นหาไฟล์
+    - open_file: เมื่อผู้ใช้ต้องการเปิดไฟล์
 
-        หากข้อความไม่ชัดเจนให้เลือก search_file
+    คำที่สื่อถึงการค้นหา: ค้นหา, หา, ต้องการดู, มีไฟล์อะไรบ้าง, แสดงรายการ
+    คำที่สื่อถึงการเปิด: เปิด, เปิดไฟล์, แสดงไฟล์
 
-        ตัวอย่าง:
-        - "หาไฟล์ pdf" -> search_file
-        - "เปิดไฟล์ชื่อ report.pdf" -> open_file
-        - "ค้นหาไฟล์ excel ที่ใช้เมื่อ 2 วันก่อน" -> search_file
-        - "เปิดไฟล์นี้" -> open_file
-        """),
+    **ให้พิจารณาประเภทของไฟล์ (type) ด้วย เช่น:**
+    - .pdf → PDF
+    - .doc, .docx → Word
+    - .xls, .xlsx → Excel
+    - .png, .jpg, .jpeg → รูปภาพ
+    - .txt → ไฟล์ข้อความ
+    - .ppt, .pptx → PowerPoint
+
+    หากข้อความไม่ชัดเจนให้เลือก search_file
+
+    ตัวอย่าง:
+    - "หาไฟล์ pdf" → search_file
+    - "เปิดไฟล์ชื่อ report.pdf" → open_file
+    - "ค้นหาไฟล์ excel ที่ใช้เมื่อ 2 วันก่อน" → search_file
+    - "เปิดไฟล์นี้" → open_file
+    - "เปิดไฟล์รูปภาพ" → open_file + type: .png/.jpeg/.jpg
+    - "เปิดไฟล์เกี่ยวกับ report" → openfile + report
+    - "มีไฟล์รูปภาพไหม" → search_file + type: .jpg/.png
+    - "แสดงเอกสาร word เมื่อวานนี้" → search_file + type: .doc/.docx
+    - "เปิดภาพแมว" → open_file + type: .jpg/.png
+    - "แสดงไฟล์ข้อความชื่อ readme" → search_file + type: .txt
+
+    """),
+
     ("human", "ข้อความ: {message}\nโปรดตอบกลับ JSON เท่านั้น เช่น:\n"
-              '{{ "intent": "search_file", "filename": "report", "type": ".pdf", "modified_within_days": 3 }}\n'
-              'หรือ {{ "intent": "open_file", "filename": "report.pdf", "type": null, "modified_within_days": null }}')
+            '{{ "intent": "search_file", "filename": "report", "type": ".pdf", "modified_within_days": 3 }}\n'
+            'หรือ {{ "intent": "open_file", "filename": "report.pdf", "type": null, "modified_within_days": null }}')
 ])
 
 

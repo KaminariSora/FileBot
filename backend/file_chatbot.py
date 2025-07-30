@@ -1,5 +1,10 @@
 import os
-from langchain_community.document_loaders import PyPDFLoader
+from pathlib import Path
+from langchain_community.document_loaders import (
+    PyPDFLoader, TextLoader, UnstructuredWordDocumentLoader,
+    UnstructuredMarkdownLoader, UnstructuredExcelLoader,
+    UnstructuredImageLoader
+)
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_vertexai.embeddings import VertexAIEmbeddings
 from langchain_core.documents import Document
@@ -11,9 +16,26 @@ from langchain_core.runnables import RunnableLambda
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./service/service_account.json"
 
+def load_file(file_path: str):
+    ext = Path(file_path).suffix.lower()
+
+    if ext == ".pdf":
+        return PyPDFLoader(file_path).load()
+    elif ext in [".txt"]:
+        return TextLoader(file_path).load()
+    elif ext in [".doc", ".docx"]:
+        return UnstructuredWordDocumentLoader(file_path).load()
+    elif ext in [".md"]:
+        return UnstructuredMarkdownLoader(file_path).load()
+    elif ext in [".xls", ".xlsx"]:
+        return UnstructuredExcelLoader(file_path).load()
+    elif ext in [".png", ".jpg", ".jpeg"]:
+        return UnstructuredImageLoader(file_path).load()
+    else:
+        raise ValueError(f"ไม่รองรับไฟล์ประเภทนี้: {ext}")
+
 def ask_question(file_path: str, question: str):
-    loader = PyPDFLoader(file_path=file_path)
-    documents = loader.load()
+    documents = load_file(file_path)
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=50)
     chunks = splitter.split_documents(documents)
@@ -24,26 +46,9 @@ def ask_question(file_path: str, question: str):
     )   
 
     vector_store = InMemoryVectorStore(embedding=embedding_model)
-    print("Adding documents one by one...")
     for i, doc_item in enumerate(chunks):
-        try:
-            if isinstance(doc_item, Document):
-                doc = doc_item
-                print(f"Document {i+1} is already a Document object")
-            elif isinstance(doc_item, str):
-                doc = Document(page_content=doc_item)
-                print(f"Created Document object from string: {doc_item}")
-            else:
-                doc = Document(page_content=str(doc_item))
-                print(f"Converted to string and created Document: {str(doc_item)}")
-
-            vector_store.add_documents([doc])
-            print(f"✓ Successfully added document {i+1}")
-
-        except Exception as e:
-            print(f"✗ Error adding document {i+1}: {str(e)}")
-
-    print(f"\nCompleted adding documents to vector store!")
+        doc = doc_item if isinstance(doc_item, Document) else Document(page_content=str(doc_item))
+        vector_store.add_documents([doc])
 
     retrievers = vector_store.as_retriever()
 
@@ -61,12 +66,11 @@ def ask_question(file_path: str, question: str):
     docs = retrievers.invoke(question)
     context = "\n\n".join([doc.page_content for doc in docs])
 
-    # 7. รวมเป็น chain แล้วถาม
     qa_chain = (
-    RunnableLambda(lambda x: {"context": context, "question": x})
-    | prompt
-    | llm
-    | StrOutputParser()
-)
+        RunnableLambda(lambda x: {"context": context, "question": x})
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
 
     return qa_chain.invoke(question)

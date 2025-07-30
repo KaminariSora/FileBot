@@ -124,7 +124,7 @@ def chat_endpoint(req: ChatRequest):
     return []
 
 @app.post("/open-file")
-def open_file(req: FileOpenRequest):
+def open_file_endpoint(req: FileOpenRequest):
     filepath = req.filepath
     print(f"[DEBUG] Received filepath: {req.filepath}")
     print(f"[DEBUG] Type of filepath: {type(req.filepath)}")

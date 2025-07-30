@@ -36,7 +36,7 @@ const ChatBot = () => {
             <div className="container">
                 <div className="chat-header">
                     <div className="header-info">
-                        <h2 className="logo-text">ไม่เข้าใจว่า MCP ใช้ยังไง บลั่กๆๆๆ</h2>
+                        <h2 className="logo-text">Main Bot</h2>
                     </div>
                 </div>
                 <div className='chat-body'>
